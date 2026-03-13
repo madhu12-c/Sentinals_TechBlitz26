@@ -29,3 +29,15 @@ export const convertLead = (id) =>
 export const submitTestLead = (data) =>
   api.post('/webhook/form', data).then(r => r.data)
 
+export const getCompany = () =>
+  api.get('/company').then(r => r.data)
+
+export const updateCompany = (data) =>
+  api.post('/company', data).then(r => r.data)
+
+export const getInsights = () =>
+  api.get('/insights').then(r => r.data)
+
+export const markLost = (id) =>
+  api.post(`/leads/${id}/lost`).then(r => r.data)
+

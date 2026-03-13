@@ -12,6 +12,7 @@ class LeadState(TypedDict):
     # ── AI outputs (set by research + score nodes) ────────────────────
     research_summary: Optional[str]     # Claude's research output
     score: Optional[int]                # 1-10
+    language: Optional[str]             # Hindi / Marathi / English etc
     score_reason: Optional[str]         # Plain English reason
     suggested_message: Optional[str]    # Draft outreach message
 

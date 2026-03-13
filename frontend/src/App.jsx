@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Dashboard  from './pages/Dashboard'
 import LeadDetail from './pages/LeadDetail'
+import Onboard    from './pages/Onboard'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
       <Routes>
         <Route path="/"         element={<Dashboard />}  />
         <Route path="/lead/:id" element={<LeadDetail />} />
+        <Route path="/onboard"  element={<Onboard />}    />
       </Routes>
     </BrowserRouter>
   )

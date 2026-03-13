@@ -37,8 +37,31 @@ async def create_lead(data: dict) -> str:
     data["status"] = "new"
     data["outreach_sent"] = False
     data["follow_up_count"] = 0
+    data["language"] = None
     result = await db.leads.insert_one(data)
     return str(result.inserted_id)
+
+
+# ── Company Profile helpers ────────────────────────────────────────────────────
+async def get_company() -> dict:
+    """Get the singleton company profile."""
+    doc = await db.companies.find_one({})
+    if doc:
+        doc["_id"] = str(doc["_id"])
+    return doc or {
+        "name": "My Business",
+        "description": "General business",
+        "target_audience": "General public"
+    }
+
+
+async def update_company(data: dict):
+    """Update or create the company profile."""
+    await db.companies.update_one(
+        {},
+        {"$set": data},
+        upsert=True
+    )
 
 
 async def get_lead(lead_id: str) -> dict:
@@ -96,3 +119,47 @@ async def save_thread_id(lead_id: str, thread_id: str):
 async def get_thread_id(lead_id: str) -> str:
     doc = await get_lead(lead_id)
     return doc.get("thread_id") if doc else None
+
+
+# ── Outcome & Learning helpers ────────────────────────────────────────────────
+async def log_outcome(lead_id: str, outcome: str):
+    """Log lead outcome (won/lost) for learning."""
+    lead = await get_lead(lead_id)
+    if not lead: return
+    
+    data = {
+        "lead_id": lead_id,
+        "name": lead.get("name"),
+        "source": lead.get("source"),
+        "message": lead.get("message"),
+        "score": lead.get("score"),
+        "research_summary": lead.get("research_summary"),
+        "outcome": outcome, # won / lost
+        "timestamp": datetime.now(timezone.utc)
+    }
+    await db.lead_outcomes.insert_one(data)
+
+
+async def get_recent_outcomes(limit: int = 50) -> list:
+    cursor = db.lead_outcomes.find().sort("timestamp", DESCENDING).limit(limit)
+    outcomes = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        outcomes.append(doc)
+    return outcomes
+
+
+async def get_latest_insights() -> dict:
+    """Get the most recent scoring insights."""
+    doc = await db.company_insights.find_one({}, sort=[("timestamp", DESCENDING)])
+    if doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+
+async def save_insights(text: str):
+    """Save new scoring insights."""
+    await db.company_insights.insert_one({
+        "text": text,
+        "timestamp": datetime.now(timezone.utc)
+    })

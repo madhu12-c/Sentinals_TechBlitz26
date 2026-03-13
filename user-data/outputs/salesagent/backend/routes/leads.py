@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from db.mongo import get_all_leads, get_lead, update_lead, get_events, log_event
+from db.mongo import get_all_leads, get_lead, update_lead, get_events, log_event, get_company, update_company, log_outcome, get_latest_insights
+from agent.nodes.learn import trigger_learning_if_needed
 from agent.graph import resume_agent
 import asyncio
 
@@ -71,7 +72,44 @@ async def list_events(lead_id: str = None, limit: int = 30):
 
 @router.post("/leads/{lead_id}/convert")
 async def mark_converted(lead_id: str):
-    """Mark a lead as converted when they become a customer."""
+    """Mark a lead as converted and log a 'won' outcome."""
     await update_lead(lead_id, {"status": "converted"})
     await log_event(lead_id, "convert", "Lead manually marked as converted.")
+    
+    # Track for learning
+    await log_outcome(lead_id, "won")
+    asyncio.create_task(trigger_learning_if_needed())
+    
+    return {"status": "ok"}
+
+
+@router.post("/leads/{lead_id}/lost")
+async def mark_lost(lead_id: str):
+    """Mark a lead as lost/cold."""
+    await update_lead(lead_id, {"status": "archived"})
+    await log_event(lead_id, "lost", "Lead marked as lost/cold.")
+    
+    # Track for learning
+    await log_outcome(lead_id, "lost")
+    asyncio.create_task(trigger_learning_if_needed())
+    
+    return {"status": "ok"}
+
+
+@router.get("/insights")
+async def fetch_insights():
+    """Get latest scoring insights."""
+    return await get_latest_insights()
+
+
+@router.get("/company")
+async def fetch_company():
+    """Get company profile info."""
+    return await get_company()
+
+
+@router.post("/company")
+async def save_company(body: dict):
+    """Save/update company profile info."""
+    await update_company(body)
     return {"status": "ok"}

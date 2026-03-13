@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Clock, CheckCircle, Star, Plus, RefreshCcw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Clock, CheckCircle, Star, Plus, RefreshCcw, Settings, Brain } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as api from '../api/leads';
 import MetricCard from '../components/MetricCard';
@@ -7,9 +8,11 @@ import LeadTable from '../components/LeadTable';
 import ActivityLog from '../components/ActivityLog';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState({ total: 0, awaiting: 0, approved: 0, converted: 0 });
   const [leads, setLeads] = useState([]);
   const [events, setEvents] = useState([]);
+  const [insights, setInsights] = useState(null);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,14 +20,16 @@ const Dashboard = () => {
   const fetchAll = async (showRefresh = false) => {
     try {
       if (showRefresh) setRefreshing(true);
-      const [m, l, e] = await Promise.all([
+      const [m, l, e, i] = await Promise.all([
         api.getMetrics(),
         api.getLeads(),
-        api.getEvents(null, 20)
+        api.getEvents(null, 20),
+        api.getInsights()
       ]);
       setMetrics(m);
       setLeads(l);
       setEvents(e);
+      setInsights(i);
       setLoading(false);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -43,24 +48,24 @@ const Dashboard = () => {
   const handleAddTestLead = async () => {
     const testLeads = [
       {
-        name: "Rajesh Kumar",
-        phone: "+919876543210",
-        email: "rajesh@example.com",
-        message: "Bhai mujhe ek achhi bike chahiye, 150cc ya 200cc. Budget 1.5 lakh hai.",
-        source: "form"
+        name: "Amit Patel",
+        phone: "+9198XXX00111",
+        email: "amit.p@outlook.com",
+        message: "नमस्कार, मुझे अपनी शॉप के लिए 5 बाइक्स की सर्विसिंग करानी है। क्या आप बल्क डिस्काउंट देते हैं? (Namaste, I need servicing for 5 bikes for my shop. Do you offer bulk discounts?)",
+        source: "WhatsApp"
       },
       {
-        name: "Priya Sharma",
-        phone: "+919123456789",
-        email: "priya@gmail.com",
-        message: "Hi, I saw your ad. Just wanted to know what bikes you have.",
-        source: "form"
+        name: "Sarah Jenkins",
+        phone: "+1415XXX9988",
+        email: "sarah@techcorp.io",
+        message: "Hi, do you offer customized maintenance plans for enterprise fleets? We have 50+ vehicles in the suburban area.",
+        source: "Form"
       },
       {
-        name: "Unknown",
-        phone: "+1234567890",
-        message: "hello",
-        source: "whatsapp"
+        name: "Just checking",
+        phone: "+91000000000",
+        message: "yo",
+        source: "Instagram"
       }
     ];
 
@@ -96,6 +101,13 @@ const Dashboard = () => {
           <p className="text-white/40 text-sm mt-1">AI-Powered Lead Automation Dashboard</p>
         </div>
         <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => navigate('/onboard')}
+            className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all"
+            title="Company Settings"
+          >
+            <Settings size={18} />
+          </button>
           <button 
             onClick={() => fetchAll(true)}
             className={`p-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all ${refreshing ? 'animate-spin' : ''}`}
@@ -144,7 +156,30 @@ const Dashboard = () => {
         </div>
 
         {/* Activity Log Column */}
-        <div className="h-full">
+        <div className="space-y-8">
+          {/* AI Insights Card */}
+          {insights && (
+            <div className="glass-card p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-teal-500/50 transition-all duration-300">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 blur-[60px] -z-10 rounded-full group-hover:bg-teal-500/20 transition-all"></div>
+               
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="p-2 bg-teal-500/20 rounded-lg text-teal-400">
+                   <Brain size={20} />
+                 </div>
+                 <h3 className="font-bold text-lg text-white/90">AI Strategy Insights</h3>
+               </div>
+
+               <div className="text-sm text-gray-400 whitespace-pre-line leading-relaxed italic">
+                 {insights.text}
+               </div>
+               
+               <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] uppercase tracking-wider text-white/20 font-bold">
+                 <span>Self-Learning Active</span>
+                 <span>Updated {new Date(insights.timestamp).toLocaleDateString()}</span>
+               </div>
+            </div>
+          )}
+
           <ActivityLog events={events} loading={loading} />
         </div>
       </div>
